@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Production-grade automation script for Microsoft Agent 365 (MC1462914).
-    - Verifies required PowerShell modules and auto-installs if missing.
+    - Dynamically detects and verifies required PowerShell modules and auto-installs if missing.
     - Connects to Microsoft Graph with resilient Interactive + Device Code fallback.
     - Validates AI Administrator / Global Administrator role permissions.
     - Parses exported Agent 365 Active Users CSV (UPN, Total Agents Used, Total Sessions, Last Activity Date).
@@ -17,8 +17,8 @@
 .PARAMETER OutputPath
     Directory where processed governance reports and inactive user audits will be saved. Default is .\output.
 
-.PARAMETER WhatIf
-    Shows what actions would be performed without modifying any data.
+.PARAMETER InactiveThresholdDays
+    Days of inactivity after which an agent user is flagged for license reclamation (Default: 30).
 
 .EXAMPLE
     .\Export-Agent365ActiveUsers.ps1
@@ -58,17 +58,19 @@ Write-Host "    MSEndpoint.com — Modern Workplace Engineering" -ForegroundColo
 Write-Host "  ================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# ── 2. PREREQUISITES & MODULE VERIFICATION ───────────────────────
+# ── 2. DYNAMIC PREREQUISITES & MODULE VERIFICATION ───────────────
+$RequiredModules = @('Microsoft.Graph.Authentication', 'Microsoft.Graph.Users')
+
 function Test-AndInstallModule {
     param([string]$ModuleName)
     if (-not (Get-Module -ListAvailable -Name $ModuleName)) {
-        Write-Host "  [..] Module '$ModuleName' not found. Installing for CurrentUser..." -ForegroundColor Yellow
+        Write-Host "  [..] Module '${ModuleName}' not found. Installing for CurrentUser..." -ForegroundColor Yellow
         try {
             Install-Module -Name $ModuleName -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
-            Write-Host "  [OK] Successfully installed $ModuleName." -ForegroundColor Green
+            Write-Host "  [OK] Successfully installed ${ModuleName}." -ForegroundColor Green
         } catch {
-            Write-Warning "Failed to auto-install $ModuleName: $($_.Exception.Message)"
-            Write-Host "Please run manually: Install-Module $ModuleName -Scope CurrentUser" -ForegroundColor Red
+            Write-Warning "Failed to auto-install ${ModuleName} - $($_.Exception.Message)"
+            Write-Host "Please run manually: Install-Module ${ModuleName} -Scope CurrentUser" -ForegroundColor Red
             throw $_
         }
     }
@@ -76,8 +78,9 @@ function Test-AndInstallModule {
 }
 
 Write-Host "  [1/5] Verifying PowerShell environment and modules..." -ForegroundColor Cyan
-Test-AndInstallModule -ModuleName 'Microsoft.Graph.Authentication'
-Test-AndInstallModule -ModuleName 'Microsoft.Graph.Users'
+foreach ($mod in $RequiredModules) {
+    Test-AndInstallModule -ModuleName $mod
+}
 
 # ── 3. RESILIENT AUTHENTICATION (Interactive + DeviceCode) ──────
 function Connect-GraphResilient {
