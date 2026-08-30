@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    One-click installer and launcher for Microsoft Agent 365 Active Users Export & Governance Toolkit
+    One-click installer and launcher for Microsoft Agent 365 Active Users Export Toolkit
 
 .DESCRIPTION
     This script checks prerequisites, sets execution policy, and runs the main
@@ -26,7 +26,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Write-Host ""
 Write-Host "  ============================================" -ForegroundColor Cyan
-Write-Host "    Microsoft Agent 365 Active Users Export & Governance Toolkit" -ForegroundColor Cyan
+Write-Host "    Microsoft Agent 365 Active Users Export Toolkit" -ForegroundColor Cyan
 Write-Host "    MSEndpoint.com — Souhaiel Morhag" -ForegroundColor DarkGray
 Write-Host "  ============================================" -ForegroundColor Cyan
 Write-Host ""
