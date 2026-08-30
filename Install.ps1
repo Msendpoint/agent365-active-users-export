@@ -49,20 +49,21 @@ if ($policy -eq 'Restricted') {
     Write-Host "  [OK] Execution policy: $policy" -ForegroundColor Green
 }
 
-# ── 3. Check required modules ────────────────────────────────
-$requiredModules = @('Microsoft.Graph')
+# ── 3. Check required modules (dynamically tailored per script)
+$requiredModules = @('Microsoft.Graph.Authentication', 'Microsoft.Graph.Users')
 foreach ($mod in $requiredModules) {
     if (Get-Module -ListAvailable -Name $mod) {
         Write-Host "  [OK] Module: $mod" -ForegroundColor Green
     } else {
         Write-Host "  [..] Installing module: $mod ..." -ForegroundColor Yellow
         try {
-            Install-Module -Name $mod -Scope CurrentUser -Force -AllowClobber
+            Install-Module -Name $mod -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
             Write-Host "  [OK] Module: $mod installed" -ForegroundColor Green
         } catch {
-            Write-Warning "  [!!] Could not install $mod — install manually: Install-Module $mod -Scope CurrentUser"
+            Write-Warning "  [!!] Could not auto-install ${mod} - $($_.Exception.Message). Install manually with: Install-Module $mod -Scope CurrentUser"
         }
     }
+    Import-Module -Name $mod -ErrorAction SilentlyContinue
 }
 
 # ── 4. Create output directory ────────────────────────────────
